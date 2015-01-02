@@ -1,5 +1,6 @@
 --Space Invaders Clone WIP 
 --Created by Gray
+--Due Feb 1st
 --www.github.com/becauseimgray
 
 function love.load()
