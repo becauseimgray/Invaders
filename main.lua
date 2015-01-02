@@ -27,12 +27,31 @@ function love.load()
 		enemy.h = 32
 
 	--set enemies location
+
+	--how far from (0, 0) they spawn
 		enemy.x = i * (enemy.w + 60) + 100
 		enemy.y = enemy.h + 100
 	--enemy's current speed
 		enemy.speed = 100
 		table.insert(enemies, enemy)
-	end
+	--creating a boolean to tell which direction we are currently moving
+		enemy.right = true
+
+	--creating collision rectangle for left side
+	colrectL = {}
+	colrectL.x = -1
+	colrectL.y = 0
+	colrectL.w = 10
+	colrectL.h = 600
+	colrectL.mode = "fill"
+
+	--creating collision rectangle for right side
+	colrectR = {}
+	colrectR.x = winw + 1
+	colrectR.y = 0
+	colrectR.w = 10
+	colrectR.h = 600
+	colrectR.mode = "fill"
 
 	--create/load background image
 
@@ -40,10 +59,10 @@ function love.load()
 
 end
 
+
 function love.update(dt)
 
     --boundaries and movement for player
-
 	if love.keyboard.isDown("right") and player.x + player.w <= winw then
 		player.x = player.x + player.speed * dt
 	end
@@ -51,39 +70,54 @@ function love.update(dt)
     if love.keyboard.isDown("left") and player.x >= 0 then
         player.x = player.x - player.speed * dt;
     end
+    --debugging in case of cthulhu
+
+    -- if love.keyboard.isDown("down") then player.y = player.y + player.speed - dt; end
+
+    --if love.keyboard.isDown("up") then    player.y = player.y - player.speed - dt; end
+
+
 
     --boundaries and movement for enemies
-   
-	for i,v in ipairs(enemies) do
 
-    -- movement (currently downwards) 
-    -- planning to make them move side to side like space invaders
-    v.y = v.y + dt
+	--starting enemies loop
+    for i,v in ipairs(enemies) do
+    	--checking to see if enemy is colliding with rectangles
+  		if v.x < colrectR.x + colrectR.w and colrectR.x < v.x + v.w and v.y < colrectR.y + colrectR.h and colrectR.y < v.y + v.h then
+			enemy.right = false
+		end
+		--this is same thing, but for the left rectangle(i.e, -1)
+  		if v.x < colrectL.x + colrectL.w and colrectL.x < v.x + v.w and v.y < colrectL.y + colrectL.h and colrectL.y < v.y + v.h then
+			enemy.right = true
+		end
 
-    if v.y > 465 then
+	--if true, move right
+	--if false, move left
+		if enemy.right then
+			v.x = v.x + enemy.speed * dt
+		end
+
+		if enemy.right == false then
+			v.x = v.x - enemy.speed * dt
+		end
     end
-
-end
-	--debugging in case of cthulhu
-
-   -- if love.keyboard.isDown("down") then player.y = player.y + player.speed - dt; end
-
-   --if love.keyboard.isDown("up") then    player.y = player.y - player.speed - dt; end
-
+	end
 end
 
 function love.draw()
 
 	--drawing background
-
 		love.graphics.draw(background)
 	
 	--drawing player
-	
 		love.graphics.draw(player.image, player.x, player.y)
 	
-	--drawing enemies
 	
+	--collision rectangles
+	love.graphics.rectangle(colrectR.mode, colrectR.x, colrectR.y, colrectR.w, colrectR.h)
+	love.graphics.rectangle(colrectL.mode, colrectL.x, colrectL.y, colrectL.w, colrectL.h)
+	
+	--drawing enemies
 	for i,v in ipairs(enemies) do
     	love.graphics.draw(enemy.image, v.x, v.y, v.width, v.height)
 	end
