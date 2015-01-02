@@ -32,14 +32,14 @@ function love.load()
 		enemy.x = i * (enemy.w + 60) + 100
 		enemy.y = enemy.h + 100
 	--enemy's current speed
-		enemy.speed = 100
+		enemy.speed = 60
 		table.insert(enemies, enemy)
 	--creating a boolean to tell which direction we are currently moving
 		enemy.right = true
 
 	--creating collision rectangle for left side
 	colrectL = {}
-	colrectL.x = -1
+	colrectL.x = -10
 	colrectL.y = 0
 	colrectL.w = 10
 	colrectL.h = 600
@@ -114,6 +114,7 @@ function love.draw()
 	
 	
 	--collision rectangles
+	
 	love.graphics.rectangle(colrectR.mode, colrectR.x, colrectR.y, colrectR.w, colrectR.h)
 	love.graphics.rectangle(colrectL.mode, colrectL.x, colrectL.y, colrectL.w, colrectL.h)
 	
