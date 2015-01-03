@@ -3,6 +3,9 @@
 --Due Feb 1st
 --www.github.com/becauseimgray
 
+require("AnAL")
+require("BoundingBox")
+
 function love.load()
 
 	--get window dimensions
@@ -58,10 +61,33 @@ function love.load()
 
 	background = love.graphics.newImage('images/bg.png')
 
+	--bullet init here
+	canShoot = true
+	canShootTimerMax = 0.9
+	canShootTimer = canShootTimerMax
+
+	--Bullet Image
+	bulletimg = love.graphics.newImage('images/bullet.png')
+
+	--Bullet entity
+	bullets = {}
+
+	--isalive?
+	isAlive = true
+
+	--scoring system
+	score = 0
+
 end
 
 
 function love.update(dt)
+	--canshoot?
+	canShootTimer = canShootTimer - (1 * dt)
+	if canShootTimer < 0 then
+  		canShoot = true
+	end
+
 
     --boundaries and movement for player
 	if love.keyboard.isDown("right") and player.x + player.w <= winw then
@@ -71,19 +97,31 @@ function love.update(dt)
     if love.keyboard.isDown("left") and player.x >= 0 then
         player.x = player.x - player.speed * dt;
     end
-    --debugging in case of cthulhu
 
-    -- if love.keyboard.isDown("down") then player.y = player.y + player.speed - dt; end
+    --controls for bullet shooting 
+    if love.keyboard.isDown(' ', 'z') and canShoot then
+	-- Create some bullets
+	newBullet = { x = player.x + (player.image:getWidth()/2), y = player.y, img = bulletImg }
+	table.insert(bullets, newBullet)
+	canShoot = false
+	canShootTimer = canShootTimerMax
+	end
 
-    --if love.keyboard.isDown("up") then    player.y = player.y - player.speed - dt; end
+	-- update the positions of bullets
+	for i, bullet in ipairs(bullets) do
+		bullet.y = bullet.y - (250 * dt)
 
-
+  		if bullet.y < 0 then -- remove bullets when they pass off the screen
+			table.remove(bullets, i)
+		end
+	end
 
     --boundaries and movement for enemies
 
 	--starting enemies loop
     for i,v in ipairs(enemies) do
     	--checking to see if enemy is colliding with rectangles
+    	--could have used BoundingBox Collisions here but I like to make it hard on myself 
   		if v.x < colrectR.x + colrectR.w and colrectR.x < v.x + v.w and v.y < colrectR.y + colrectR.h and colrectR.y < v.y + v.h then
 			enemy.right = false
 		end
@@ -102,8 +140,20 @@ function love.update(dt)
 			v.x = v.x - enemy.speed * dt
 		end
     end
+
+    	--bullet collision logic loop
+    for i, enemy in ipairs(enemies) do
+		for j, bullet in ipairs(bullets) do
+			if CheckCollision(enemy.x, enemy.y, enemy.image:getWidth(), enemy.image:getHeight(), bullet.x, bullet.y, bulletimg:getWidth(), bulletimg:getHeight()) then
+				table.remove(bullets, j)
+				table.remove(enemies, i)
+				score = score + 1
+			end
+		end
 	end
 end
+end
+
 
 function love.draw()
 
@@ -115,10 +165,15 @@ function love.draw()
 	
 	
 	--collision rectangles
-	
 	love.graphics.rectangle(colrectR.mode, colrectR.x, colrectR.y, colrectR.w, colrectR.h)
 	love.graphics.rectangle(colrectL.mode, colrectL.x, colrectL.y, colrectL.w, colrectL.h)
 	
+
+	--drawing bullets
+	for i, bullet in ipairs(bullets) do
+  		love.graphics.draw(bulletimg, bullet.x, bullet.y)
+	end
+
 	--drawing enemies
 	for i,v in ipairs(enemies) do
     	love.graphics.draw(enemy.image, v.x, v.y, v.width, v.height)
