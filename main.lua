@@ -7,23 +7,33 @@
 
 require("AnAL")
 require("BoundingBox")
-Menu = require("menu")
 require ('sounds')
+Menu = require("menu")
 
 function love.load()
 
-	--load soundtrack
+	--load soundtrack, fonts, and images
 	clicked = love.audio.newSource("sounds/clicked.wav", "static")
 	bgm = love.audio.play("sounds/bgsong.mp3", "stream", true)
 	love.audio.stop(bgm)
-
-	--create font 
-	font = love.graphics.setNewFont( "fonts/LCD_Solid.ttf", 80 )
+	font = love.graphics.setNewFont( "fonts/LCD_Solid.ttf", 60 )
 	default = love.graphics.setNewFont( "fonts/LCD_Solid.ttf", 10 )
+	levelfont = love.graphics.setNewFont( "fonts/LCD_Solid.ttf", 50)
+	bulletimg = love.graphics.newImage('images/bullet.png')
+	background = love.graphics.newImage('images/bg.png')
 
 
-	--create game bool
+	--Game bool
 	gameStart = false
+	gameWon = false
+
+	--Later on, we'll use this to see if the player is alive when hit with an enemy bullet
+	--isAlive = true
+
+	--Scoring
+	score = 0
+	--Levels
+	level = 1
 
 	--create menu
 	menu = Menu.new()
@@ -45,6 +55,11 @@ function love.load()
       	end
    }
 
+   if gameWon == true then
+   	winmenu = Menu.new()
+   end
+
+
 
     
 
@@ -52,35 +67,34 @@ function love.load()
 	winw = love.window.getWidth()
 	winh = love.window.getHeight()
 
+
+
 	--create player
 	player = {}
+
 	player.image = love.graphics.newImage('images/player.png')
-	--player dimensions and location
 	player.w, player.h = 32
 	player.x = winw / 2 - player.w
 	player.y = winh - 50
-	--player's current speed
 	player.speed = 600
+
+
 
 	--create enemies 
 	enemies = {}
 
-	--set variables for enemies
-	for i = 0, 7 do
-		enemy = {}
-		enemy.image = love.graphics.newImage('images/enemy.png')
-		enemy.w = 32
-		enemy.h = 32
-
-	--how far from (0, 0) they spawn
-		enemy.x = i * (enemy.w + 60) + 100
-		enemy.y = enemy.h + 100
-	--enemy's current speed
-		enemy.speed = 60
-		table.insert(enemies, enemy)
-
-	--creating a boolean to tell which direction we are currently moving
-		enemy.right = true
+	for j = 0, 2 do
+		for i = 0, 7 do
+			enemy = {}
+			enemy.image = love.graphics.newImage('images/enemy.png')
+			enemy.w = 32
+			enemy.h = 32
+			enemy.x = i * (enemy.w + 60) + 100
+			enemy.y = j * (enemy.h + 100) + 100
+			enemy.speed = 60
+			table.insert(enemies, enemy)
+			enemy.right = true
+		end
 	end
 
 
@@ -101,30 +115,16 @@ function love.load()
 	colrectR.h = 600
 	colrectR.mode = "fill"
 
-	--create/load background image
-	background = love.graphics.newImage('images/bg.png')
-	--Bullet Image
-	bulletimg = love.graphics.newImage('images/bullet.png')
-
-	--bullet init here
+	--create bullets
+	bullets = {}
+	--bullet timer
 	canShoot = true
 	canShootTimerMax = 0.1 --0.9 = perfect speed || lower speeds = faster shooting
 	shootSpeed = 100
 	canShootTimer = canShootTimerMax
-
-	--Bullet entity
-	bullets = {}
-
-	--Later on, we'll use this to see if the player is alive when hit with an enemy bullet
-		--isAlive = true
-
-	--scoring system
-	score = 0
-
 end
 
 function love.keypressed(key)
-	--keys for menu
    menu:keypressed(key)
 end
 
@@ -133,65 +133,44 @@ function love.update(dt)
 	menu:update(dt)
 
 	--update music if playing game
-	if gameStart == true then
-		love.audio.update()
-	end
+	if gameStart == true then love.audio.update() end
 
 	--canshoot?
 	canShootTimer = canShootTimer - (1 * dt)
-	if canShootTimer < 0 then
-  		canShoot = true
-	end
+	if canShootTimer < 0 then canShoot = true end
 
 
    --boundaries and movement for player
-	if love.keyboard.isDown("right") and player.x + player.w <= winw then
-		player.x = player.x + player.speed * dt
-	end
+	if love.keyboard.isDown("right") and player.x + player.w <= winw then player.x = player.x + player.speed * dt; end
 
-    if love.keyboard.isDown("left") and player.x >= 0 then
-        player.x = player.x - player.speed * dt;
-end
+    if love.keyboard.isDown("left") and player.x >= 0 then player.x = player.x - player.speed * dt; end
 
-
-
-    --controls for bullet shooting 
+    --Create bullets when z or space is pressed 
     if love.keyboard.isDown(' ', 'z') and canShoot then
-
-	-- Create some bullets
 	newBullet = { x = player.x + (player.image:getWidth()/2), y = player.y, img = bulletImg }
 	table.insert(bullets, newBullet)
 	canShoot = false
 	canShootTimer = canShootTimerMax
 	end
 
-
-
-	--boundaries and movement for enemies
+--boundaries and movement for enemies
 
 	--starting enemies loop
     for i,v in ipairs(enemies) do
     	--checking to see if enemy is colliding with rectangles
-    	--could have used BoundingBox Collisions here but I like to make it hard on myself 
   		if v.x < colrectR.x + colrectR.w and colrectR.x < v.x + v.w and v.y < colrectR.y + colrectR.h and colrectR.y < v.y + v.h then
 			enemy.right = false
 		end
-		--this is same thing, but for the left rectangle(i.e, -1)
   		if v.x < colrectL.x + colrectL.w and colrectL.x < v.x + v.w and v.y < colrectL.y + colrectL.h and colrectL.y < v.y + v.h then
 			enemy.right = true
 		end
 
 	--if true, move right
 	--if false, move left
-		if enemy.right then
-			v.x = v.x + enemy.speed * dt
-		end
+		if enemy.right then v.x = v.x + enemy.speed * dt end
 
-		if enemy.right == false then
-			v.x = v.x - enemy.speed * dt
-		end
-
-end
+		if enemy.right == false then v.x = v.x - enemy.speed * dt end
+	end
 
 	-- update the positions of bullets
 	for i, bullet in ipairs(bullets) do
@@ -212,30 +191,29 @@ end
 			end
 		end
 	end
+
 	if not next(enemies) then
-		for j, bullet in ipairs(bullets) do
-			table.remove(bullets, j)
-		end
-				for i = 0, 7 do
+		level = level + 1 
+		speed = level + 60
+			for i, bullet in ipairs(bullets) do
+				table.remove(bullets)
+				canShoot = false
+				canShootTimer = canShootTimerMax
+			end
+				for j = 0, 2 do
+					for i = 0, 7 do
 					enemy = {}
 					enemy.image = love.graphics.newImage('images/enemy.png')
 					enemy.w = 32
 					enemy.h = 32
-
-
-		--how far from (0, 0) they spawn
 					enemy.x = i * (enemy.w + 60) + 100
-					enemy.y = enemy.h + 100
-		--enemy's current speed
-					enemy.speed = 60
+					enemy.y = j * (enemy.h + 100) + 100
+					enemy.speed = speed + 5
 					table.insert(enemies, enemy)
-		--creating a boolean to tell which direction we are currently moving
-    				enemy.right = true
+					enemy.right = true
+					end
 				end
-			
-
 	end
-
 end
 
 
@@ -269,15 +247,39 @@ if gameStart == true then
     	love.graphics.draw(enemy.image, v.x, v.y, v.width, v.height)
 	end
 
-	love.graphics.print("Score:" .. score, 10, 5)
+	love.graphics.print("Score: " .. score, 10, 5)
+	love.graphics.setFont( levelfont )
+	love.graphics.setColor( 255, 0, 0)
+	love.graphics.print("Level: " .. level, winw / 1.5, 5)
 
 end
 	if gameStart == false then
+		love.graphics.setColor( 255, 255, 255)
 		love.graphics.setFont( default )
 		love.graphics.draw(background)
 		--draw menu
 		menu:draw(winw / 2 - 50, winh / 2)
 	end
+
+	if gameStart == true and level == 2 then
+		canShoot = false
+		for bullet in pairs (bullets) do
+    		bullets [bullet] = nil
+		end
+		gameWon = true
+		love.graphics.setColor( 0, 0, 255)
+		love.graphics.print("Congratulations! You win!", 10, winh / 2 )
+		love.graphics.print("Press 'x' to Continue", 10, winh / 2 + 100)
+		enemy.speed = 180
+		if love.keyboard.isDown('x') then
+		gameStart = false
+		gameWon = false
+		level = 1
+		love.audio.stop(bgm)
+		love.graphics.reset()
+	end
+	end
+
 end
 
 
