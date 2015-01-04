@@ -191,7 +191,7 @@ end
 			v.x = v.x - enemy.speed * dt
 		end
 
-
+end
 
 	-- update the positions of bullets
 	for i, bullet in ipairs(bullets) do
@@ -236,7 +236,6 @@ end
 
 	end
 
-end
 end
 
 
