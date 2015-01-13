@@ -23,13 +23,14 @@ return {
 				local height = 20
 				local width = 80
 				
-				love.graphics.setColor(255, 255, 255, 128)
+				love.graphics.setColor(255, 255, 255, 128)				
 				love.graphics.rectangle('fill', x, y + height*(self.selected-1) + (self.animOffset * height), width, height)
-				
+
 				for i, item in ipairs(self.items) do
 					if self.selected == i then
 						--change these graphics to change "background effect" of menu
 						love.graphics.setColor(255, 255, 255, 128)
+						
 					else
 						love.graphics.setColor(255, 255, 255, 128)
 					end

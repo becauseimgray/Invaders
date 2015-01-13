@@ -5,35 +5,30 @@
 --Thank you to Pix for creating bgmusic
 --http://www.sakari-infinity.net/author/pix/
 
-require("AnAL")
+
 require("BoundingBox")
 require ('sounds')
 Menu = require("menu")
+require("AnAL")
+require("animator")
 
 function love.load()
-
-	--load soundtrack, fonts, and images
-	clicked = love.audio.newSource("sounds/clicked.wav", "static")
-	bgm = love.audio.play("sounds/bgsong.mp3", "stream", true)
-	love.audio.stop(bgm)
-	font = love.graphics.setNewFont( "fonts/LCD_Solid.ttf", 60 )
-	default = love.graphics.setNewFont( "fonts/LCD_Solid.ttf", 10 )
-	levelfont = love.graphics.setNewFont( "fonts/LCD_Solid.ttf", 50)
-	bulletimg = love.graphics.newImage('images/bullet.png')
-	background = love.graphics.newImage('images/bg.png')
-
-
-	--Game bool
-	gameStart = false
+	clicked = 			love.audio.newSource("sounds/clicked.wav", "static") -- menu select sound
+	bgm = 				love.audio.play("sounds/bgsong.mp3", "stream", true) -- background music that plays during the main game
+	love.audio.stop(bgm)												     -- stops music so it doesnt play during main menu screen
+	font = 				love.graphics.setNewFont( "fonts/LCD_Solid.ttf", 60 )--loads score font
+	default = 			love.graphics.setNewFont( "fonts/LCD_Solid.ttf", 10 )--loads default size for menu
+	levelfont = 		love.graphics.setNewFont( "fonts/LCD_Solid.ttf", 50) --loads level font
+	bulletimg = 		love.graphics.newImage('images/bullet.png')          --bullet image
+	background = 		love.graphics.newImage('images/bg.png')              --background image
+	gameStart = false --Game booleans and integers
 	gameWon = false
+	score = 0 -- Keeping score
+	level = 1 -- Keeping track of which level we're on 
 
-	--Later on, we'll use this to see if the player is alive when hit with an enemy bullet
-	--isAlive = true
+		
+	--isAlive = true | use this to see if the player is alive when hit with an enemy bullet
 
-	--Scoring
-	score = 0
-	--Levels
-	level = 1
 
 	--create menu
 	menu = Menu.new()
@@ -58,10 +53,6 @@ function love.load()
    if gameWon == true then
    	winmenu = Menu.new()
    end
-
-
-
-    
 
 	--get window dimensions
 	winw = love.window.getWidth()
@@ -122,6 +113,28 @@ function love.load()
 	canShootTimerMax = 0.1 --0.9 = perfect speed || lower speeds = faster shooting
 	shootSpeed = 100
 	canShootTimer = canShootTimerMax
+
+	-- obstacle = {}
+	-- obstacle.w = 96
+	-- obstacle.h = 96
+	-- obstacle.image     = love.graphics.newImage("images/obstacle.png")        --animations start here
+	-- obstacle.ouch1 = 	 love.graphics.newImage("images/obstacleouch1.png")   
+	-- obstacle.ouch2 = 	 love.graphics.newImage("images/obstacleouch2.png")
+	-- obstacle.ouch3 =      love.graphics.newImage("images/obstacleouch3.png")
+	-- obstacle.anim  =      newAnimation(obstacle.image, 96, 96, 3, 0)           --using AnAL to load in animation settings
+	-- obstacle.ouch1anim  = newAnimation(obstacle.ouch1, 96, 96, 3, 0)
+	-- obstacle.ouch2anim  = newAnimation(obstacle.ouch2, 96, 96, 3, 0)
+	-- obstacle.ouch3anim  = newAnimation(obstacle.ouch3, 96, 96, 3, 0) 
+	-- obstacle.x          = winw - 700
+	-- obstacle.y          = player.y - 150
+	animationLoad(obstacle, 96, 96, winw - 700, player.y - 150, "images/obstacle.png", 3)
+	animationLoad(obstacle2, 96, 96, winw - 700, player.y - 150, "images/obstacleouch2.png", 3)
+
+	-- --creating obstacle booleans 
+	-- damagedouch1 = false
+	-- damagedouch2 = false
+	-- damagedouch3 = false
+
 end
 
 function love.keypressed(key)
@@ -131,6 +144,16 @@ end
 function love.update(dt)
 	--update menu
 	menu:update(dt)
+
+	--update animation
+	animationUpdate(obstacle, dt)
+	animationUpdate(obstacle2, dt)
+
+	-- --update animations
+	-- obstacle.anim:update(dt)
+	-- obstacle.ouch1anim:update(dt)
+	-- obstacle.ouch2anim:update(dt)
+	-- obstacle.ouch3anim:update(dt)
 
 	--update music if playing game
 	if gameStart == true then love.audio.update() end
@@ -192,11 +215,35 @@ function love.update(dt)
 		end
 	end
 
+	for i, bullet in ipairs(bullets) do
+		if animationCollision(bullet.x, bullet.y, bulletimg:getWidth(), bulletimg:getHeight()) then
+			animationNext(obstacle, obstacle2)
+		end
+
+		-- if damagedouch1 == false and damagedouch2 == false and damagedouch3 == false then
+		-- 	if CheckCollision(bullet.x, bullet.y, bulletimg:getWidth(), bulletimg:getHeight(), obstacle.x, obstacle.y, obstacle.w, obstacle.h - 25) then
+		-- 		table.remove(bullets, i)
+		-- 		damagedouch1 = true
+		-- 	end
+		-- end
+
+		-- if damagedouch1 == true then
+		-- 	if CheckCollision(bullet.x, bullet.y, bulletimg:getWidth(), bulletimg:getHeight(), obstacle.x, obstacle.y, obstacle.w, obstacle.h - 25) then
+		-- 		table.remove(bullets, i)
+		--  		damagedouch2 = true
+		--  		damagedouch1 = false
+		--  	end
+		-- end
+	end
+
+
 	if not next(enemies) then
 		level = level + 1 
 		speed = level + 60
 			for i, bullet in ipairs(bullets) do
-				table.remove(bullets)
+				for bullet in pairs (bullets) do
+    				bullets [bullet] = nil
+				end
 				canShoot = false
 				canShootTimer = canShootTimerMax
 			end
@@ -237,6 +284,23 @@ if gameStart == true then
 	love.graphics.rectangle(colrectL.mode, colrectL.x, colrectL.y, colrectL.w, colrectL.h)
 	
 
+	--drawing animations
+	if damagedouch1 == true then
+		obstacle.ouch1anim:draw(obstacle.x, obstacle.y)
+	end
+
+	if damagedouch2 == true then
+		obstacle.ouch2anim:draw(obstacle.x, obstacle.y)
+	end
+
+	if damagedouch3 == true then
+		obstacle.ouch3anim:draw(obstacle.x, obstacle.y) 
+	end
+	
+	if damagedouch1 == false then
+		obstacle.anim:draw(obstacle.x, obstacle.y)
+	end
+	
 	--drawing bullets
 	for i, bullet in ipairs(bullets) do
   		love.graphics.draw(bulletimg, bullet.x, bullet.y)
@@ -261,7 +325,7 @@ end
 		menu:draw(winw / 2 - 50, winh / 2)
 	end
 
-	if gameStart == true and level == 2 then
+	if gameStart == true and level == 10 then
 		canShoot = false
 		for bullet in pairs (bullets) do
     		bullets [bullet] = nil
